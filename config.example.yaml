@@ -1,0 +1,30 @@
+telegram:
+  token: "YOUR_BOT_TOKEN_HERE"
+
+deepseek:
+  api_key: "YOUR_DEEPSEEK_API_KEY"
+  model: deepseek-chat
+  base_url: https://api.deepseek.com
+
+kaf_cli:
+  path: ./bin/kaf-cli
+
+storage:
+  data_dir: ./data
+
+# ── Mail: choose one provider ──
+# provider: smtp  → uses smtp section
+# provider: outlook → uses outlook section (OAuth, requires setup_outlook.py first)
+mail:
+  provider: smtp
+  smtp:
+    smtp_server: smtp.qq.com       # QQ邮箱; 163用 smtp.163.com
+    smtp_port: 587
+    sender: your_email@qq.com
+    password: YOUR_AUTH_CODE       # QQ邮箱授权码(非QQ密码)
+  outlook:
+    client_id: ""
+    tenant_id: ""
+    client_secret: ""
+    refresh_token: ""
+    sender: your_email@outlook.com

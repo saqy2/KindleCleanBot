@@ -1,0 +1,24 @@
+# Novel Bot
+*.pyc
+__pycache__/
+venv/
+data/
+*.epub
+*.mobi
+*.azw3
+*.db
+*.pkl
+
+# Never commit these
+config.yaml
+o365_token.txt
+
+# Temp / test files
+_*
+
+# IDE
+.idea/
+.vscode/
+
+# Binary
+bin/kaf-cli

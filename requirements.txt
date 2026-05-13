@@ -1,0 +1,7 @@
+python-telegram-bot[job-queue]>=20.0,<23.0
+openai>=1.0,<3.0
+pyyaml>=6.0,<7.0
+pyahocorasick>=2.0,<3.0
+jieba>=0.42,<1.0
+zhon>=2.0,<3.0
+msal>=1.0,<2.0
