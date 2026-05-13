@@ -1,4 +1,4 @@
-# Novel Bot
+# KindleCleanBot
 
 Telegram 小说转换机器人。发送 .txt 小说到 Telegram Bot，AI 自动分析章节结构、识别广告、去重清洗，调用 [kaf-cli](https://github.com/ystyle/kaf-cli) 转换为 epub/mobi/azw3 格式并返回，设置邮箱后可直接发送到Kindle
 
@@ -84,7 +84,7 @@ python -m bot.main
 docker-compose up -d
 ```
 
-发布到飞牛OS等 NAS 时，需在 `docker-compose.yml` 中将 `config.yaml` 和 `data` 目录挂载为 volume。
+部署飞牛OS等 NAS 时，需在 `docker-compose.yml` 中将 `config.yaml` 和 `data` 目录挂载为 volume。
 
 ## 使用说明
 
@@ -109,24 +109,21 @@ docker-compose up -d
 
 ### 交互示例
 
-```
-用户: [上传 我绑架了时间线.txt]
-Bot:  📄 我绑架了时间线.txt | 828 章
-      ⚠️ 34 处重复章节 | 包裹字符: ===..., ...===
-      请描述你的处理需求...
+发送TXT
 
-用户: 转epub
-Bot:  🔍 已缓存扫描: 828 章
-      🤖 分析完成: 用户指定epub，存在===包裹字符默认清理
-      🧹 去除包裹字符: 801 行
-      🧹 去除重复章节: 32 个
-      ⚙️ 转换 epub 中...
-      ✅ 完成！生成 1 个文件
-      [文件下载]
+![](https://github.com/saqy2/picx-images-hosting/blob/master/IMG_6485.PNG?raw=true)
 
-用户: 再转个mobi
-Bot:  [生成 mobi]
-```
+
+
+![](https://github.com/saqy2/picx-images-hosting/blob/master/IMG_6486.PNG?raw=true)
+
+
+
+### Telegram直接使用
+
+添加机器人：@rplobster_bot
+
+不保证可用，哪天服务器到期就没了
 
 ## 邮件配置
 
@@ -223,4 +220,3 @@ main/
 ## 依赖
 
 - [kaf-cli](https://github.com/ystyle/kaf-cli) — txt 转 epub/mobi/azw3 命令行工具，**木兰宽松许可证**
-
