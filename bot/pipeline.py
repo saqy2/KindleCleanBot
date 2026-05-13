@@ -3,6 +3,7 @@
 Clean the novel → convert with kaf-cli → return output files.
 """
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -20,8 +21,6 @@ def run(input_path: str, recipe: dict, output_dir: str) -> dict:
 
     # Determine book name
     bookname = recipe.get("bookname") or input_path.stem
-    # Sanitize: remove wrapping chars from filename-derived name
-    import re
     bookname = re.sub(r'[_=#*\-]+$', '', bookname).strip()
 
     # Step 1: Read file once, pass text to cleaner

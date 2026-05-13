@@ -66,7 +66,8 @@ def _send_smtp(smtp_config: dict, to_email: str, filepath: str) -> None:
     required = ("smtp_server", "smtp_port", "sender", "password")
     missing = [k for k in required if k not in smtp_config]
     if missing:
-        raise MailError(f"SMTP 配置不完整，缺少: {', '.join(missing)}")
+        raise MailError("SMTP 未配置。请在 config.yaml 的 mail.smtp 中设置邮箱和授权码（缺少: {}）".format(
+            ", ".join(missing)))
 
     file_path = Path(filepath)
     if not file_path.exists():
@@ -98,8 +99,8 @@ def _send_smtp(smtp_config: dict, to_email: str, filepath: str) -> None:
             conn.ehlo()
             conn.login(smtp_config["sender"], smtp_config["password"])
             conn.send_message(msg)
-    except smtplib.SMTPAuthenticationError:
-        raise MailError("SMTP 认证失败，请检查邮箱和密码")
+    except smtplib.SMTPAuthenticationError as e:
+        raise MailError("SMTP 认证失败，请检查邮箱和密码") from e
     except smtplib.SMTPConnectError as e:
         raise MailError(f"无法连接 SMTP 服务器 {server}:{port}") from e
     except smtplib.SMTPException as e:

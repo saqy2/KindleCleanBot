@@ -12,6 +12,7 @@ Fallbacks (any state): /help /cancel /done /mail /setmail /mymail
 import asyncio
 import logging
 import re
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -163,7 +164,7 @@ def _output_dir():
 
 # ── Entry handlers ─────────────────────────────────────
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📚 **小说转换机器人**\n\n"
         "三步搞定：\n"
@@ -174,17 +175,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         "发送邮件：/setmail 设置邮箱后使用 /mail\n"
         "发送 /help 查看完整帮助。"
     )
-    return IDLE
 
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     doc = update.message.document
     if not doc.file_name or not doc.file_name.lower().endswith(".txt"):
         await update.message.reply_text("⚠️ 只支持 .txt 文件")
-        return IDLE
+        return ConversationHandler.END
     if doc.file_size and doc.file_size > 50 * 1024 * 1024:
         await update.message.reply_text("⚠️ 文件太大，限制 50MB")
-        return IDLE
+        return ConversationHandler.END
 
     chat_id = update.effective_chat.id
     bot = update.get_bot()
@@ -192,7 +192,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     data_dir.mkdir(parents=True, exist_ok=True)
 
     file_obj = await doc.get_file()
-    file_path = data_dir / doc.file_name
+    safe_name = f"{int(time.time())}_{doc.file_name}"
+    file_path = data_dir / safe_name
     await file_obj.download_to_drive(str(file_path))
 
     status = await bot.send_message(chat_id=chat_id, text=f"🔍 正在扫描 **{doc.file_name}**...")
@@ -205,7 +206,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             file_path.unlink(missing_ok=True)
         except OSError:
             pass
-        return IDLE
+        return ConversationHandler.END
 
     context.user_data["pending_file"] = str(file_path)
     context.user_data["pending_fingerprint"] = fingerprint
@@ -229,23 +230,23 @@ async def handle_requirement(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not file_path_raw or not fingerprint:
         await update.message.reply_text("⚠️ 数据丢失，请重新发送文件。")
         _clear_cache(context)
-        return IDLE
+        return ConversationHandler.END
 
     file_path = Path(file_path_raw)
     if not file_path.exists():
         await update.message.reply_text("⚠️ 文件已过期，请重新发送。")
         _clear_cache(context)
-        return IDLE
+        return ConversationHandler.END
 
     # ── Cancel / Finish ──
     if any(kw in text for kw in CANCEL_KW) or text.startswith("/cancel"):
         _clear_cache(context)
         await update.message.reply_text("✅ 已取消。发送新的 .txt 文件重新开始。")
-        return IDLE
+        return ConversationHandler.END
     if any(kw in text for kw in FINISH_KW) or text.startswith("/done"):
         _clear_cache(context)
         await update.message.reply_text("✅ 已完成。随时可以发送新的 .txt 文件。")
-        return IDLE
+        return ConversationHandler.END
 
     # ── Undo ──
     if text.startswith("撤销"):
@@ -347,6 +348,8 @@ async def handle_requirement(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except Exception as e:
         logger.exception("Error processing: %s", e)
         await Reporter.send_error(bot, chat_id, str(e))
+        _clear_cache(context)
+        return ConversationHandler.END
 
     return READY
 
@@ -371,19 +374,19 @@ def _send_mail_sync(email: str, filepath: str) -> None:
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(HELP_TEXT)
-    return IDLE if not context.user_data.get("pending_file") else READY
+    return ConversationHandler.END
 
 
 async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     _clear_cache(context)
     await update.message.reply_text("✅ 已取消。发送新的 .txt 文件重新开始。")
-    return IDLE
+    return ConversationHandler.END
 
 
 async def done_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     _clear_cache(context)
     await update.message.reply_text("✅ 已完成。随时可以发送新的 .txt 文件。")
-    return IDLE
+    return ConversationHandler.END
 
 
 async def setmail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -391,14 +394,14 @@ async def setmail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     m = re.match(r"/setmail\s+(\S+@\S+\.\S+)", text)
     if not m:
         await update.message.reply_text("用法：/setmail your@mail.com")
-        return IDLE if not context.user_data.get("pending_file") else READY
+        return ConversationHandler.END
     email = m.group(1).strip()
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         await update.message.reply_text("⚠️ 邮箱格式无效。")
-        return IDLE if not context.user_data.get("pending_file") else READY
+        return ConversationHandler.END
     context.user_data["email"] = email
     await update.message.reply_text(f"✅ 邮箱已保存：{email}")
-    return IDLE if not context.user_data.get("pending_file") else READY
+    return ConversationHandler.END
 
 
 async def mymail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -407,25 +410,25 @@ async def mymail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await update.message.reply_text(f"📧 当前邮箱：{email}")
     else:
         await update.message.reply_text("📧 请先设置邮箱：/setmail your@mail.com")
-    return IDLE if not context.user_data.get("pending_file") else READY
+    return ConversationHandler.END
 
 
 async def mail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     email = context.user_data.get("email")
     if not email:
         await update.message.reply_text("📧 请先设置邮箱：/setmail your@mail.com")
-        return IDLE if not context.user_data.get("pending_file") else READY
+        return ConversationHandler.END
 
     out_dir = _output_dir()
     if not out_dir.exists():
         await update.message.reply_text("📧 没有可发送的文件。请先转换一本小说。")
-        return READY
+        return ConversationHandler.END
 
     files = sorted(out_dir.glob("*"), key=lambda p: p.stat().st_mtime, reverse=True)
     files = [f for f in files if f.suffix.lower() in (".epub", ".mobi", ".azw3")]
     if not files:
         await update.message.reply_text("📧 没有可发送的文件。请先转换一本小说。")
-        return IDLE if not context.user_data.get("pending_file") else READY
+        return ConversationHandler.END
 
     target = files[0]
     status = await update.message.reply_text(f"📧 正在发送 **{target.name}** 到 {email} ...")
@@ -434,7 +437,7 @@ async def mail_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await status.edit_text(f"✅ 已发送 **{target.name}** 到 {email}")
     except MailError as e:
         await status.edit_text(f"❌ 发送失败\n{str(e)[:500]}")
-    return IDLE if not context.user_data.get("pending_file") else READY
+    return ConversationHandler.END
 
 
 # ── Undo ───────────────────────────────────────────────

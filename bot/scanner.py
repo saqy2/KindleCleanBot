@@ -199,13 +199,13 @@ def _detect_ads(sampled_lines: list[str], all_lines: list[str] | None, chapter_i
                 if pos.get(pk):
                     sampled_pos[ad_key][pk] += 1
 
-        # ── Fallback: trigger-less types in sampled lines ──
-        for key, det in AD_DETECTORS.items():
-            if det.get("triggers"):
-                continue
-            pat = det["re"]
+        # ── Fallback: trigger-less types in sampled lines (O(n) single pass) ──
+        triggerless = {k: det["re"] for k, det in AD_DETECTORS.items() if not det.get("triggers")}
+        if triggerless:
             for line_idx, line in enumerate(sampled_lines):
-                if pat.search(line):
+                for key, pat in triggerless.items():
+                    if not pat.search(line):
+                        continue
                     sc = sampled_counts[key]
                     if sc < MAX_AD_SAMPLES:
                         vals = pat.findall(line)
